@@ -9,6 +9,7 @@ package graceful
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,7 +22,7 @@ var killParent sync.Once
 // KillParent sends the kill signal to the parent process if we are a child
 func KillParent() {
 	killParent.Do(func() {
-		if Manager.IsChild() {
+		if GetManager().IsChild() {
 			ppid := syscall.Getppid()
 			if ppid > 1 {
 				_ = syscall.Kill(ppid, syscall.SIGTERM)
@@ -47,6 +48,10 @@ func RestartProcess() (int, error) {
 		files[i], err = l.(filer).File()
 		if err != nil {
 			return 0, err
+		}
+
+		if unixListener, ok := l.(*net.UnixListener); ok {
+			unixListener.SetUnlinkOnClose(false)
 		}
 		// Remember to close these at the end.
 		defer files[i].Close()

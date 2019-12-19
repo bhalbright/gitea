@@ -211,7 +211,7 @@ func (m *webhookNotifier) NotifyIssueChangeTitle(doer *models.User, issue *model
 	}
 }
 
-func (m *webhookNotifier) NotifyIssueChangeStatus(doer *models.User, issue *models.Issue, isClosed bool) {
+func (m *webhookNotifier) NotifyIssueChangeStatus(doer *models.User, issue *models.Issue, actionComment *models.Comment, isClosed bool) {
 	mode, _ := models.AccessLevel(issue.Poster, issue.Repo)
 	var err error
 	if issue.IsPull {
@@ -559,6 +559,37 @@ func (*webhookNotifier) NotifyMergePullRequest(pr *models.PullRequest, doer *mod
 	}
 }
 
+func (m *webhookNotifier) NotifyPullRequestChangeTargetBranch(doer *models.User, pr *models.PullRequest, oldBranch string) {
+	issue := pr.Issue
+	if !issue.IsPull {
+		return
+	}
+	var err error
+
+	if err = issue.LoadPullRequest(); err != nil {
+		log.Error("LoadPullRequest failed: %v", err)
+		return
+	}
+	issue.PullRequest.Issue = issue
+	mode, _ := models.AccessLevel(issue.Poster, issue.Repo)
+	err = webhook_module.PrepareWebhooks(issue.Repo, models.HookEventPullRequest, &api.PullRequestPayload{
+		Action: api.HookIssueEdited,
+		Index:  issue.Index,
+		Changes: &api.ChangesPayload{
+			Ref: &api.ChangesFromPayload{
+				From: oldBranch,
+			},
+		},
+		PullRequest: issue.PullRequest.APIFormat(),
+		Repository:  issue.Repo.APIFormat(mode),
+		Sender:      doer.APIFormat(),
+	})
+
+	if err != nil {
+		log.Error("PrepareWebhooks [is_pull: %v]: %v", issue.IsPull, err)
+	}
+}
+
 func (m *webhookNotifier) NotifyPullRequestReview(pr *models.PullRequest, review *models.Review, comment *models.Comment) {
 	var reviewHookType models.HookEventType
 
@@ -694,4 +725,26 @@ func (m *webhookNotifier) NotifyUpdateRelease(doer *models.User, rel *models.Rel
 
 func (m *webhookNotifier) NotifyDeleteRelease(doer *models.User, rel *models.Release) {
 	sendReleaseHook(doer, rel, api.HookReleaseDeleted)
+}
+
+func (m *webhookNotifier) NotifySyncPushCommits(pusher *models.User, repo *models.Repository, refName, oldCommitID, newCommitID string, commits *models.PushCommits) {
+	apiPusher := pusher.APIFormat()
+	apiCommits, err := commits.ToAPIPayloadCommits(repo.RepoPath(), repo.HTMLURL())
+	if err != nil {
+		log.Error("commits.ToAPIPayloadCommits failed: %v", err)
+		return
+	}
+
+	if err := webhook_module.PrepareWebhooks(repo, models.HookEventPush, &api.PushPayload{
+		Ref:        refName,
+		Before:     oldCommitID,
+		After:      newCommitID,
+		CompareURL: setting.AppURL + commits.CompareURL,
+		Commits:    apiCommits,
+		Repo:       repo.APIFormat(models.AccessModeOwner),
+		Pusher:     apiPusher,
+		Sender:     apiPusher,
+	}); err != nil {
+		log.Error("PrepareWebhooks: %v", err)
+	}
 }
