@@ -29,6 +29,11 @@ func AddDependency(ctx *context.Context) {
 		return
 	}
 
+	if err = issue.LoadRepo(); err != nil {
+		ctx.ServerError("LoadRepo", err)
+		return
+	}
+
 	// Redirect
 	defer ctx.Redirect(issue.HTMLURL(), http.StatusSeeOther)
 
