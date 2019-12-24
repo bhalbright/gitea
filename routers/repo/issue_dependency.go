@@ -88,6 +88,11 @@ func RemoveDependency(ctx *context.Context) {
 		return
 	}
 
+	if err = issue.LoadRepo(); err != nil {
+		ctx.ServerError("LoadRepo", err)
+		return
+	}
+
 	// Redirect
 	ctx.Redirect(issue.HTMLURL(), http.StatusSeeOther)
 
