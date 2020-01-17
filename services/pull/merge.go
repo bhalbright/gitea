@@ -30,6 +30,7 @@ import (
 )
 
 // Merge merges pull request to base repository.
+// Caller should check PR is ready to be merged (review and status checks)
 // FIXME: add repoWorkingPull make sure two merges does not happen at same time.
 func Merge(pr *models.PullRequest, doer *models.User, baseGitRepo *git.Repository, mergeStyle models.MergeStyle, message string) (err error) {
 	binVersion, err := git.BinVersion()
@@ -53,18 +54,13 @@ func Merge(pr *models.PullRequest, doer *models.User, baseGitRepo *git.Repositor
 	}
 	prConfig := prUnit.PullRequestsConfig()
 
-	if err := pr.CheckUserAllowedToMerge(doer); err != nil {
-		log.Error("CheckUserAllowedToMerge(%v): %v", doer, err)
-		return fmt.Errorf("CheckUserAllowedToMerge: %v", err)
-	}
-
 	// Check if merge style is correct and allowed
 	if !prConfig.IsMergeStyleAllowed(mergeStyle) {
 		return models.ErrInvalidMergeStyle{ID: pr.BaseRepo.ID, Style: mergeStyle}
 	}
 
 	defer func() {
-		go AddTestPullRequestTask(doer, pr.BaseRepo.ID, pr.BaseBranch, false)
+		go AddTestPullRequestTask(doer, pr.BaseRepo.ID, pr.BaseBranch, false, "", "")
 	}()
 
 	// Clone base repo.
@@ -162,7 +158,7 @@ func Merge(pr *models.PullRequest, doer *models.User, baseGitRepo *git.Repositor
 	// Determine if we should sign
 	signArg := ""
 	if version.Compare(binVersion, "1.7.9", ">=") {
-		sign, keyID := pr.SignMerge(doer, tmpBasePath, "HEAD", trackingBranch)
+		sign, keyID, _ := pr.SignMerge(doer, tmpBasePath, "HEAD", trackingBranch)
 		if sign {
 			signArg = "-S" + keyID
 		} else if version.Compare(binVersion, "2.0.0", ">=") {
@@ -354,7 +350,7 @@ func Merge(pr *models.PullRequest, doer *models.User, baseGitRepo *git.Repositor
 		log.Error("setMerged [%d]: %v", pr.ID, err)
 	}
 
-	notification.NotifyMergePullRequest(pr, doer, baseGitRepo)
+	notification.NotifyMergePullRequest(pr, doer)
 
 	// Reset cached commit count
 	cache.Remove(pr.Issue.Repo.GetCommitsCountCacheKey(pr.BaseBranch, true))
@@ -374,8 +370,10 @@ func Merge(pr *models.PullRequest, doer *models.User, baseGitRepo *git.Repositor
 			return err
 		}
 		close := (ref.RefAction == references.XRefActionCloses)
-		if err = issue_service.ChangeStatus(ref.Issue, doer, close); err != nil {
-			return err
+		if close != ref.Issue.IsClosed {
+			if err = issue_service.ChangeStatus(ref.Issue, doer, close); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -470,4 +468,77 @@ func getDiffTree(repoPath, baseBranch, headBranch string) (string, error) {
 	}
 
 	return out.String(), nil
+}
+
+// IsSignedIfRequired check if merge will be signed if required
+func IsSignedIfRequired(pr *models.PullRequest, doer *models.User) (bool, error) {
+	if err := pr.LoadProtectedBranch(); err != nil {
+		return false, err
+	}
+
+	if pr.ProtectedBranch == nil || !pr.ProtectedBranch.RequireSignedCommits {
+		return true, nil
+	}
+
+	sign, _, err := pr.SignMerge(doer, pr.BaseRepo.RepoPath(), pr.BaseBranch, pr.GetGitRefName())
+
+	return sign, err
+}
+
+// IsUserAllowedToMerge check if user is allowed to merge PR with given permissions and branch protections
+func IsUserAllowedToMerge(pr *models.PullRequest, p models.Permission, user *models.User) (bool, error) {
+	if !p.CanWrite(models.UnitTypeCode) {
+		return false, nil
+	}
+
+	err := pr.LoadProtectedBranch()
+	if err != nil {
+		return false, err
+	}
+
+	if pr.ProtectedBranch == nil || pr.ProtectedBranch.IsUserMergeWhitelisted(user.ID) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// CheckPRReadyToMerge checks whether the PR is ready to be merged (reviews and status checks)
+func CheckPRReadyToMerge(pr *models.PullRequest) (err error) {
+	if pr.BaseRepo == nil {
+		if err = pr.GetBaseRepo(); err != nil {
+			return fmt.Errorf("GetBaseRepo: %v", err)
+		}
+	}
+	if pr.ProtectedBranch == nil {
+		if err = pr.LoadProtectedBranch(); err != nil {
+			return fmt.Errorf("LoadProtectedBranch: %v", err)
+		}
+		if pr.ProtectedBranch == nil {
+			return nil
+		}
+	}
+
+	isPass, err := IsPullCommitStatusPass(pr)
+	if err != nil {
+		return err
+	}
+	if !isPass {
+		return models.ErrNotAllowedToMerge{
+			Reason: "Not all required status checks successful",
+		}
+	}
+
+	if enoughApprovals := pr.ProtectedBranch.HasEnoughApprovals(pr); !enoughApprovals {
+		return models.ErrNotAllowedToMerge{
+			Reason: "Does not have enough approvals",
+		}
+	}
+	if rejected := pr.ProtectedBranch.MergeBlockedByRejectedReview(pr); rejected {
+		return models.ErrNotAllowedToMerge{
+			Reason: "There are requested changes",
+		}
+	}
+
+	return nil
 }
