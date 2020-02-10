@@ -398,6 +398,7 @@ func (issue *Issue) apiFormat(e Engine) *api.Issue {
 	apiIssue.Repo = &api.RepositoryMeta{
 		ID:       issue.Repo.ID,
 		Name:     issue.Repo.Name,
+		Owner:    issue.Repo.OwnerName,
 		FullName: issue.Repo.FullName(),
 	}
 
@@ -440,7 +441,7 @@ func (issue *Issue) HashTag() string {
 
 // IsPoster returns true if given user by ID is the poster.
 func (issue *Issue) IsPoster(uid int64) bool {
-	return issue.PosterID == uid
+	return issue.OriginalAuthorID == 0 && issue.PosterID == uid
 }
 
 func (issue *Issue) hasLabel(e Engine, labelID int64) bool {
@@ -1103,13 +1104,12 @@ func GetIssuesByIDs(issueIDs []int64) ([]*Issue, error) {
 
 // IssuesOptions represents options of an issue.
 type IssuesOptions struct {
+	ListOptions
 	RepoIDs     []int64 // include all repos if empty
 	AssigneeID  int64
 	PosterID    int64
 	MentionedID int64
 	MilestoneID int64
-	Page        int
-	PageSize    int
 	IsClosed    util.OptionalBool
 	IsPull      util.OptionalBool
 	LabelIDs    []int64

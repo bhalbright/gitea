@@ -2,9 +2,17 @@
 /* exported timeAddManual, toggleStopwatch, cancelStopwatch, initHeatmap */
 /* exported toggleDeadlineForm, setDeadline, updateDeadline, deleteDependencyModal, cancelCodeComment, onOAuthLoginClick */
 
+import 'jquery.are-you-sure';
 import './publicPath.js';
-import './gitGraphLoader.js';
-import './semanticDropdown.js';
+import './polyfills.js';
+import './vendor/semanticDropdown.js';
+
+import initContextPopups from './features/contextPopup.js';
+import initHighlight from './features/highlight.js';
+import initGitGraph from './features/gitGraph.js';
+import initClipboard from './features/clipboard.js';
+
+import ActivityTopAuthors from './components/ActivityTopAuthors.vue';
 
 function htmlEncode(text) {
   return jQuery('<div />').text(text).html();
@@ -16,6 +24,7 @@ let previewFileModes;
 let simpleMDEditor;
 const commentMDEditors = {};
 let codeMirrorEditor;
+let hljs;
 
 // Disable Dropzone auto-discover because it's manually initialized
 if (typeof (Dropzone) !== 'undefined') {
@@ -1362,7 +1371,16 @@ function initWikiForm() {
         }, '|',
         'unordered-list', 'ordered-list', '|',
         'link', 'image', 'table', 'horizontal-rule', '|',
-        'clean-block', 'preview', 'fullscreen', 'side-by-side']
+        'clean-block', 'preview', 'fullscreen', 'side-by-side', '|',
+        {
+          name: 'revert-to-textarea',
+          action(e) {
+            e.toTextArea();
+          },
+          className: 'fa fa-file',
+          title: 'Revert to simple textarea',
+        },
+      ]
     });
     $(simplemde.codemirror.getInputField()).addClass('js-quick-submit');
 
@@ -1466,7 +1484,16 @@ function setSimpleMDE($editArea) {
       'code', 'quote', '|',
       'unordered-list', 'ordered-list', '|',
       'link', 'image', 'table', 'horizontal-rule', '|',
-      'clean-block', 'preview', 'fullscreen', 'side-by-side']
+      'clean-block', 'preview', 'fullscreen', 'side-by-side', '|',
+      {
+        name: 'revert-to-textarea',
+        action(e) {
+          e.toTextArea();
+        },
+        className: 'fa fa-file',
+        title: 'Revert to simple textarea',
+      },
+    ]
   });
 
   return true;
@@ -1488,7 +1515,16 @@ function setCommentSimpleMDE($editArea) {
       'code', 'quote', '|',
       'unordered-list', 'ordered-list', '|',
       'link', 'image', 'table', 'horizontal-rule', '|',
-      'clean-block']
+      'clean-block', '|',
+      {
+        name: 'revert-to-textarea',
+        action(e) {
+          e.toTextArea();
+        },
+        className: 'fa fa-file',
+        title: 'Revert to simple textarea',
+      },
+    ]
   });
   simplemde.codemirror.setOption('extraKeys', {
     Enter: () => {
@@ -2106,17 +2142,12 @@ function initCodeView() {
       }
     }).trigger('hashchange');
   }
-  $('.ui.fold-code').on('click', (e) => {
-    const $foldButton = $(e.target);
-    if ($foldButton.hasClass('fa-chevron-down')) {
-      $(e.target).parent().next().slideUp('fast', () => {
-        $foldButton.removeClass('fa-chevron-down').addClass('fa-chevron-right');
-      });
-    } else {
-      $(e.target).parent().next().slideDown('fast', () => {
-        $foldButton.removeClass('fa-chevron-right').addClass('fa-chevron-down');
-      });
-    }
+  $('.fold-code').on('click', ({ target }) => {
+    const box = target.closest('.file-content');
+    const folded = box.dataset.folded !== 'true';
+    target.classList.add(`fa-chevron-${folded ? 'right' : 'down'}`);
+    target.classList.remove(`fa-chevron-${folded ? 'down' : 'right'}`);
+    box.dataset.folded = String(folded);
   });
   function insertBlobExcerpt(e) {
     const $blob = $(e.target);
@@ -2319,7 +2350,7 @@ function initTemplateSearch() {
   changeOwner();
 }
 
-$(document).ready(() => {
+$(document).ready(async () => {
   csrf = $('meta[name=_csrf]').attr('content');
   suburl = $('meta[name=_suburl]').attr('content');
 
@@ -2370,14 +2401,6 @@ $(document).ready(() => {
   $('tr[data-href]').click(function () {
     window.location = $(this).data('href');
   });
-
-  // Highlight JS
-  if (typeof hljs !== 'undefined') {
-    const nodes = [].slice.call(document.querySelectorAll('pre code') || []);
-    for (let i = 0; i < nodes.length; i++) {
-      hljs.highlightBlock(nodes[i]);
-    }
-  }
 
   // Dropzone
   const $dropzone = $('#dropzone');
@@ -2430,24 +2453,6 @@ $(document).ready(() => {
       }
     }
   }
-
-  // Clipboard JS
-  const clipboard = new Clipboard('.clipboard');
-  clipboard.on('success', (e) => {
-    e.clearSelection();
-
-    $(`#${e.trigger.getAttribute('id')}`).popup('destroy');
-    e.trigger.setAttribute('data-content', e.trigger.getAttribute('data-success'));
-    $(`#${e.trigger.getAttribute('id')}`).popup('show');
-    e.trigger.setAttribute('data-content', e.trigger.getAttribute('data-original'));
-  });
-
-  clipboard.on('error', (e) => {
-    $(`#${e.trigger.getAttribute('id')}`).popup('destroy');
-    e.trigger.setAttribute('data-content', e.trigger.getAttribute('data-error'));
-    $(`#${e.trigger.getAttribute('id')}`).popup('show');
-    e.trigger.setAttribute('data-content', e.trigger.getAttribute('data-original'));
-  });
 
   // Helpers.
   $('.delete-button').click(showDeletePopup);
@@ -2556,6 +2561,7 @@ $(document).ready(() => {
   initPullRequestReview();
   initRepoStatusChecker();
   initTemplateSearch();
+  initContextPopups(suburl);
 
   // Repo clone url.
   if ($('#repo-clone-url').length > 0) {
@@ -2591,6 +2597,13 @@ $(document).ready(() => {
       $repoName.val($cloneAddr.val().match(/^(.*\/)?((.+?)(\.git)?)$/)[3]);
     }
   });
+
+  // parallel init of lazy-loaded features
+  [hljs] = await Promise.all([
+    initHighlight(),
+    initGitGraph(),
+    initClipboard(),
+  ]);
 });
 
 function changeHash(hash) {
@@ -2892,9 +2905,13 @@ function initVueApp() {
     delimiters: ['${', '}'],
     el,
     data: {
-      searchLimit: document.querySelector('meta[name=_search_limit]').content,
+      searchLimit: (document.querySelector('meta[name=_search_limit]') || {}).content,
       suburl: document.querySelector('meta[name=_suburl]').content,
-      uid: Number(document.querySelector('meta[name=_context_uid]').content),
+      uid: Number((document.querySelector('meta[name=_context_uid]') || {}).content),
+      activityTopAuthors: window.ActivityTopAuthors || [],
+    },
+    components: {
+      ActivityTopAuthors,
     },
   });
 }
@@ -3299,7 +3316,7 @@ function initTopicbar() {
       label: 'ui small label'
     },
     apiSettings: {
-      url: `${suburl}/api/v1/topics/search?q={encodeURIComponent(query)}`,
+      url: `${suburl}/api/v1/topics/search?q={query}`,
       throttle: 500,
       cache: false,
       onResponse(res) {
@@ -3455,9 +3472,10 @@ function initIssueList() {
   const repolink = $('#repolink').val();
   const repoId = $('#repoId').val();
   const crossRepoSearch = $('#crossRepoSearch').val();
-  let issueSearchUrl = `${suburl}/api/v1/repos/${repolink}/issues?q={query}`;
+  const tp = $('#type').val();
+  let issueSearchUrl = `${suburl}/api/v1/repos/${repolink}/issues?q={query}&type=${tp}`;
   if (crossRepoSearch === 'true') {
-    issueSearchUrl = `${suburl}/api/v1/repos/issues/search?q={query}&priority_repo_id=${repoId}`;
+    issueSearchUrl = `${suburl}/api/v1/repos/issues/search?q={query}&priority_repo_id=${repoId}&type=${tp}`;
   }
   $('#new-dependency-drop-list')
     .dropdown({
