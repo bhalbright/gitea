@@ -6,12 +6,13 @@ package structs
 
 // GitEntry represents a git tree
 type GitEntry struct {
-	Path string `json:"path"`
-	Mode string `json:"mode"`
-	Type string `json:"type"`
-	Size int64  `json:"size"`
-	SHA  string `json:"sha"`
-	URL  string `json:"url"`
+	Path     string `json:"path"`
+	FullPath string `json:"full_path"`
+	Mode     string `json:"mode"`
+	Type     string `json:"type"`
+	Size     int64  `json:"size"`
+	SHA      string `json:"sha"`
+	URL      string `json:"url"`
 }
 
 // GitTreeResponse returns a git tree

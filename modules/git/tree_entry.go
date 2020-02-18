@@ -53,6 +53,20 @@ func (te *TreeEntry) Name() string {
 	return te.gogitTreeEntry.Name
 }
 
+// FullName returns the full name of the entry
+func (te *TreeEntry) FullName() string {
+	//TODO this isn't working for directories so have to code around that
+	//if te.IsDir() {
+
+	//TODO .Name is relative :(
+
+	file, err := te.ptree.gogitTree.TreeEntryFile(te.gogitTreeEntry)
+	if err != nil {
+		return ""
+	}
+	return file.Name
+}
+
 // Mode returns the mode of the entry
 func (te *TreeEntry) Mode() EntryMode {
 	return EntryMode(te.gogitTreeEntry.Mode)

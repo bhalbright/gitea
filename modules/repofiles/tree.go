@@ -80,6 +80,7 @@ func GetTreeBySHA(repo *models.Repository, sha string, page, perPage int, recurs
 		i := e - rangeStart
 
 		tree.Entries[i].Path = entries[e].Name()
+		tree.Entries[i].FullPath = entries[e].FullName()
 		tree.Entries[i].Mode = fmt.Sprintf("%06o", entries[e].Mode())
 		tree.Entries[i].Type = entries[e].Type()
 		tree.Entries[i].Size = entries[e].Size()
