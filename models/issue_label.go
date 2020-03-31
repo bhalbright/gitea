@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	api "code.gitea.io/gitea/modules/structs"
-
 	"xorm.io/builder"
 	"xorm.io/xorm"
 )
@@ -35,16 +33,6 @@ type Label struct {
 	QueryString     string `xorm:"-"`
 	IsSelected      bool   `xorm:"-"`
 	IsExcluded      bool   `xorm:"-"`
-}
-
-// APIFormat converts a Label to the api.Label format
-func (label *Label) APIFormat() *api.Label {
-	return &api.Label{
-		ID:          label.ID,
-		Name:        label.Name,
-		Color:       strings.TrimLeft(label.Color, "#"),
-		Description: label.Description,
-	}
 }
 
 // GetLabelTemplateFile loads the label template file by given name,
@@ -279,6 +267,17 @@ func GetLabelIDsInRepoByNames(repoID int64, labelNames []string) ([]int64, error
 		Asc("name").
 		Cols("id").
 		Find(&labelIDs)
+}
+
+// BuildLabelNamesIssueIDsCondition returns a builder where get issue ids match label names
+func BuildLabelNamesIssueIDsCondition(labelNames []string) *builder.Builder {
+	return builder.Select("issue_label.issue_id").
+		From("issue_label").
+		InnerJoin("label", "label.id = issue_label.label_id").
+		Where(
+			builder.In("label.name", labelNames),
+		).
+		GroupBy("issue_label.issue_id")
 }
 
 // GetLabelIDsInReposByNames returns a list of labelIDs by names in one of the given
