@@ -17,6 +17,7 @@ require (
 	gitea.com/macaron/macaron v1.4.0
 	gitea.com/macaron/session v0.0.0-20191207215012-613cebf0674d
 	gitea.com/macaron/toolbox v0.0.0-20190822013122-05ff0fc766b7
+	github.com/99designs/gqlgen v0.11.3
 	github.com/BurntSushi/toml v0.3.1
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RoaringBitmap/roaring v0.4.23 // indirect
@@ -98,6 +99,7 @@ require (
 	github.com/unknwon/i18n v0.0.0-20190805065654-5c6446a380b6
 	github.com/unknwon/paginater v0.0.0-20151104151617-7748a72e0141
 	github.com/urfave/cli v1.20.0
+	github.com/vektah/gqlparser/v2 v2.0.1
 	github.com/xanzy/go-gitlab v0.31.0
 	github.com/yohcop/openid-go v1.0.0
 	github.com/yuin/goldmark v1.1.32
