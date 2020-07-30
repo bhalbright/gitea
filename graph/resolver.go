@@ -2,6 +2,7 @@ package graph
 
 import (
 	"code.gitea.io/gitea/graph/model"
+	giteaCtx "code.gitea.io/gitea/modules/context"
 )
 // This file will not be regenerated automatically.
 //
@@ -9,5 +10,6 @@ import (
 
 type Resolver struct{
 	todos []*model.Todo
+	giteaApiContext *giteaCtx.APIContext
 }
 
