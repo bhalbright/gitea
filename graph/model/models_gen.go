@@ -2,19 +2,32 @@
 
 package model
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type Node interface {
+	IsNode()
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type PageInfo struct {
+	HasNextPage     bool    `json:"hasNextPage"`
+	HasPreviousPage bool    `json:"hasPreviousPage"`
+	StartCursor     *string `json:"startCursor"`
+	EndCursor       *string `json:"endCursor"`
 }
 
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID        string  `json:"id"`
+	RestAPIID *int    `json:"rest_api_id"`
+	Username  *string `json:"username"`
+}
+
+func (User) IsNode() {}
+
+type UserConnection struct {
+	PageInfo   *PageInfo   `json:"pageInfo"`
+	TotalCount *int        `json:"totalCount"`
+	Edges      []*UserEdge `json:"edges"`
+}
+
+type UserEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *User  `json:"node"`
 }
