@@ -4,10 +4,6 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"code.gitea.io/gitea/models"
-	giteaCtx "code.gitea.io/gitea/modules/context"
-	"code.gitea.io/gitea/modules/convert"
-	"code.gitea.io/gitea/routers/api/v1/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -15,13 +11,17 @@ import (
 
 	"code.gitea.io/gitea/graph/generated"
 	"code.gitea.io/gitea/graph/model"
+	"code.gitea.io/gitea/models"
+	giteaCtx "code.gitea.io/gitea/modules/context"
+	"code.gitea.io/gitea/modules/convert"
+	"code.gitea.io/gitea/routers/api/v1/utils"
 )
 
 func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*model.Repository, error) {
 	//panic(fmt.Errorf("not implemented"))
 	var (
 		repoOwner *models.User
-		err   error
+		err       error
 	)
 
 	// Check if the user is the same as the repository owner.
@@ -58,17 +58,10 @@ func (r *queryResolver) Repository(ctx context.Context, owner string, name strin
 		return nil, err
 	}
 
-	gqlRepo := convert.ToGqlRepository(repo, models.AccessModeRead)
-	return *gqlRepo, nil
+	gqlRepo := convert.ToGraphRepository(repo, models.AccessModeRead)
+	return gqlRepo, nil
 
 	return nil, errors.New("both owner and repository name must be provided")
-}
-
-func authorizeRepository(ctx *giteaCtx.APIContext) error {
-	if !utils.IsAnyRepoReader(ctx) {
-		return errors.New("Must have permission to read repository")
-	}
-	return nil
 }
 
 func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
@@ -87,3 +80,16 @@ func (r *Resolver) Repository() generated.RepositoryResolver { return &repositor
 
 type queryResolver struct{ *Resolver }
 type repositoryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func authorizeRepository(ctx *giteaCtx.APIContext) error {
+	if !utils.IsAnyRepoReader(ctx) {
+		return errors.New("Must have permission to read repository")
+	}
+	return nil
+}

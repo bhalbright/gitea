@@ -6,8 +6,10 @@ package convert
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
+	graphmodel "code.gitea.io/gitea/graph/model"
 	"code.gitea.io/gitea/models"
 	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/log"
@@ -413,3 +415,19 @@ func ToOAuth2Application(app *models.OAuth2Application) *api.OAuth2Application {
 		Created:      app.CreatedUnix.AsTime(),
 	}
 }
+
+// ToGraphRepository convert from models.Repository to graphmodel.Repository
+func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *graphmodel.Repository {
+	apiRepo := repo.APIFormat(mode)
+	//TODO need int64 type in gqlgen
+	intID := int(apiRepo.ID)
+	//TODO ID s/b id with type base 64 encoded, look at relay source
+	return &graphmodel.Repository{
+		ID:                        strconv.FormatInt(apiRepo.ID, 10),
+		RestAPIID:                 &intID,
+		Name:                      &apiRepo.Name,
+		FullName:                  &apiRepo.FullName,
+	}
+}
+
+
