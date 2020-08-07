@@ -12,13 +12,10 @@ import (
 	"code.gitea.io/gitea/graph/generated"
 	"code.gitea.io/gitea/graph/model"
 	"code.gitea.io/gitea/models"
-	giteaCtx "code.gitea.io/gitea/modules/context"
 	"code.gitea.io/gitea/modules/convert"
-	"code.gitea.io/gitea/routers/api/v1/utils"
 )
 
 func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*model.Repository, error) {
-	//panic(fmt.Errorf("not implemented"))
 	var (
 		repoOwner *models.User
 		err       error
@@ -53,7 +50,7 @@ func (r *queryResolver) Repository(ctx context.Context, owner string, name strin
 		return nil, errors.New("repo not found")
 	}
 
-	err = authorizeRepository(r.giteaApiContext)
+	err = AuthorizeRepository(r.giteaApiContext)
 	if err != nil {
 		return nil, err
 	}
@@ -80,16 +77,3 @@ func (r *Resolver) Repository() generated.RepositoryResolver { return &repositor
 
 type queryResolver struct{ *Resolver }
 type repositoryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func authorizeRepository(ctx *giteaCtx.APIContext) error {
-	if !utils.IsAnyRepoReader(ctx) {
-		return errors.New("Must have permission to read repository")
-	}
-	return nil
-}

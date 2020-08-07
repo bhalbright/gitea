@@ -14,7 +14,5 @@ func GraphQL(ctx *giteaCtx.APIContext) {
 		},
 	}
 	handler := handler2.NewDefaultServer(generated.NewExecutableSchema(config))
-
-	//handler := handler2.New(generated.NewExecutableSchema(config))
 	handler.ServeHTTP(ctx.Resp, ctx.Req.Request)
 }
