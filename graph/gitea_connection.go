@@ -1,0 +1,148 @@
+// Copyright 2020 The Gitea Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+package graph
+
+import (
+	"code.gitea.io/gitea/modules/log"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+
+	"code.gitea.io/gitea/models"
+)
+
+/*
+ Implementation of a relay connection using gitea specific pagination information. Adapted from
+ arrayconnection implementation in github.com/seripap/relay implementation.
+*/
+
+const PREFIX = "giteaconnection:"
+
+
+//ctx context.Context, obj *model.Repository, first *int, after *string, last *int, before *string)
+//(*model.UserConnection, error) {
+
+// GetListOptions get the gitea list options for pagination based on the graphql pagination args and the total size of the data
+func GetListOptions(totalSize int, firstNumber *int, afterCursor *string, lastNumber *int, beforeCursor *string, maxPageSize int) models.ListOptions {
+	log.Info("get list options, in here 1")
+	var (
+		offset   int = 0
+		pageSize int = 0
+		first    int = -1
+		last     int = -1
+		before   int = getOffsetWithDefault(beforeCursor, -1)
+		after    int = getOffsetWithDefault(afterCursor, -1)
+	)
+	log.Info("get list options, in here 2")
+	if firstNumber != nil {
+		first = *firstNumber
+	}
+	if lastNumber != nil {
+		last = *lastNumber
+	}
+	log.Info("get list options, in here 3")
+
+	if first > -1 {
+		log.Info("get list options, in here 4")
+		if first > maxPageSize {
+			first = maxPageSize
+		}
+		if after == -1 && before == -1 {
+			//no cursor
+			pageSize = first
+		} else if after > -1 {
+			//first x after cursor
+			pageSize = first
+			if after > totalSize {
+				after = totalSize
+			}
+			offset = after
+		} else if before > -1 {
+			//first x before cursor
+			if before > totalSize {
+				before = totalSize
+			}
+			if first >= before {
+				first = before - 1
+			}
+			pageSize = first
+		}
+	} else if last > -1 {
+		log.Info("get list options, in here 5")
+		if last > maxPageSize {
+			last = maxPageSize
+		}
+		if after == -1 && before == -1 {
+			//no cursor
+			if last > totalSize {
+				last = totalSize
+			}
+			offset = totalSize - last
+			pageSize = last
+		} else if before > -1 {
+			//last x before cursor
+			if before > totalSize {
+				before = totalSize
+			}
+			offset = before - last - 1
+			if offset < 0 {
+				last += offset
+				offset = 0
+			}
+			pageSize = last
+		} else if after > -1 {
+			//last x after cursor
+			if after > totalSize {
+				after = totalSize
+			}
+			offset = totalSize - last
+			if offset < after {
+				offset = after
+			}
+			pageSize = last
+		}
+	}
+	return models.ListOptions{
+		Page:     1, //gitea pagination will use offset rather than page number, but need to default to number other than 0
+		Offset:   offset,
+		PageSize: pageSize,
+	}
+}
+
+
+func offsetToCursor(offset int) string {
+	str := fmt.Sprintf("%v%v", PREFIX, offset)
+	return base64.StdEncoding.EncodeToString([]byte(str))
+}
+
+func cursorToOffset(cursor string) (int, error) {
+	str := ""
+	b, err := base64.StdEncoding.DecodeString(string(cursor))
+	if err == nil {
+		str = string(b)
+	}
+	str = strings.Replace(str, PREFIX, "", -1)
+	offset, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, errors.New("Invalid cursor")
+	}
+	return offset, nil
+}
+
+func getOffsetWithDefault(cursor *string, defaultOffset int) int {
+	if cursor == nil {
+		return defaultOffset
+	}
+	if *cursor == "" {
+		return defaultOffset
+	}
+	offset, err := cursorToOffset(*cursor)
+	if err != nil {
+		return defaultOffset
+	}
+	return offset
+}
