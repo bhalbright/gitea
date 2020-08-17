@@ -5,10 +5,11 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"code.gitea.io/gitea/graph/generated"
 	"code.gitea.io/gitea/graph/model"
+	"code.gitea.io/gitea/modules/convert"
 )
 
 func (r *queryResolver) Repository(ctx context.Context, owner string, name string) (*model.Repository, error) {
@@ -16,7 +17,16 @@ func (r *queryResolver) Repository(ctx context.Context, owner string, name strin
 }
 
 func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
-	panic(fmt.Errorf("not implemented"))
+	//TODO invalid id is blowing up
+	resolvedID := convert.FromGraphID(id)
+	switch resolvedID.Typename {
+	case "repository":
+		return r.resolveRepositoryById(ctx, resolvedID.ID)
+	case "user":
+		return r.resolveUserById(ctx, resolvedID.ID)
+	default:
+		return nil, errors.New("Unknown node type")
+	}
 }
 
 func (r *repositoryResolver) Collaborators(ctx context.Context, obj *model.Repository, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {

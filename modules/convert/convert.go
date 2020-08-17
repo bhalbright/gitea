@@ -5,8 +5,9 @@
 package convert
 
 import (
+	"encoding/base64"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
 	"code.gitea.io/gitea/graph/model"
@@ -421,9 +422,8 @@ func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *model.R
 	apiRepo := repo.APIFormat(mode)
 	//TODO need int64 type in gqlgen
 	intID := int(apiRepo.ID)
-	//TODO ID s/b id with type base 64 encoded, look at relay source
 	return &model.Repository{
-		ID:                        strconv.FormatInt(apiRepo.ID, 10),
+		ID:                        ToGraphId("repository", apiRepo.ID),
 		RestAPIID:                 &intID,
 		Name:                      &apiRepo.Name,
 		FullName:                  &apiRepo.FullName,
@@ -434,14 +434,33 @@ func ToGraphUser(user *models.User, signed, authed bool) *model.User {
 	apiUser := ToUser(user, signed, authed)
 	//TODO need int64 type in gqlgen
 	intID := int(apiUser.ID)
-	//TODO ID s/b id with type base 64 encoded, look at relay source
 	return &model.User{
-		ID:        strconv.FormatInt(apiUser.ID, 10),
+		ID:        ToGraphId("user", apiUser.ID),
 		RestAPIID: &intID,
 		Username:  &apiUser.UserName,
-		//AvatarURL: user.AvatarLink(),
-		//FullName:  markup.Sanitize(user.FullName),
-		//Created:   user.CreatedUnix.AsTime(),
 	}
 }
 
+// ToGraphId returns an encoded ID from the given typename and ID that is unique.
+func ToGraphId(typename string, ID int64) string {
+	str := fmt.Sprintf("%v:%v", typename, ID)
+	return base64.StdEncoding.EncodeToString([]byte(str))
+}
+
+// FromGraphID takes a string created by ToGraphId and returns a struct with the typename and ID
+func FromGraphID(graphID string) *model.GraphID {
+	//adapted from https://github.com/graphql-go/relay/
+	stringID := ""
+	bytes, err := base64.StdEncoding.DecodeString(graphID)
+	if err == nil {
+		stringID = string(bytes)
+	}
+	idParts := strings.Split(stringID, ":")
+	if len(idParts) < 2 {
+		return nil
+	}
+	return &model.GraphID{
+		Typename: idParts[0],
+		ID:       idParts[1],
+	}
+}

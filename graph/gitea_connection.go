@@ -5,7 +5,6 @@
 package graph
 
 import (
-	"code.gitea.io/gitea/modules/log"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -22,13 +21,8 @@ import (
 
 const PREFIX = "giteaconnection:"
 
-
-//ctx context.Context, obj *model.Repository, first *int, after *string, last *int, before *string)
-//(*model.UserConnection, error) {
-
 // GetListOptions get the gitea list options for pagination based on the graphql pagination args and the total size of the data
 func GetListOptions(totalSize int, firstNumber *int, afterCursor *string, lastNumber *int, beforeCursor *string, maxPageSize int) models.ListOptions {
-	log.Info("get list options, in here 1")
 	var (
 		offset   int = 0
 		pageSize int = 0
@@ -37,17 +31,15 @@ func GetListOptions(totalSize int, firstNumber *int, afterCursor *string, lastNu
 		before   int = getOffsetWithDefault(beforeCursor, -1)
 		after    int = getOffsetWithDefault(afterCursor, -1)
 	)
-	log.Info("get list options, in here 2")
+
 	if firstNumber != nil {
 		first = *firstNumber
 	}
 	if lastNumber != nil {
 		last = *lastNumber
 	}
-	log.Info("get list options, in here 3")
 
 	if first > -1 {
-		log.Info("get list options, in here 4")
 		if first > maxPageSize {
 			first = maxPageSize
 		}
@@ -72,7 +64,6 @@ func GetListOptions(totalSize int, firstNumber *int, afterCursor *string, lastNu
 			pageSize = first
 		}
 	} else if last > -1 {
-		log.Info("get list options, in here 5")
 		if last > maxPageSize {
 			last = maxPageSize
 		}
@@ -121,7 +112,7 @@ func offsetToCursor(offset int) string {
 
 func cursorToOffset(cursor string) (int, error) {
 	str := ""
-	b, err := base64.StdEncoding.DecodeString(string(cursor))
+	b, err := base64.StdEncoding.DecodeString(cursor)
 	if err == nil {
 		str = string(b)
 	}

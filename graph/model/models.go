@@ -8,3 +8,8 @@ type Repository struct {
 	CollaboratorsID *int            `json:"collaborators"`
 }
 func (Repository) IsNode() {}
+
+type GraphID struct {
+	Typename string
+	ID       string
+}
