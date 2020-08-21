@@ -303,7 +303,9 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	&ast.Source{Name: "graph/schema.graphqls", Input: `interface Node {
+	&ast.Source{Name: "graph/schema.graphqls", Input: `scalar Int64
+
+interface Node {
     id: ID!
 }
 
@@ -316,7 +318,7 @@ type PageInfo {
 
 type Repository implements Node {
     id: ID!
-    rest_api_id: Int,
+    rest_api_id: Int64,
     name: String
     fullName: String
     collaborators(
@@ -329,7 +331,7 @@ type Repository implements Node {
 
 type User implements Node {
     id: ID!
-    rest_api_id: Int,
+    rest_api_id: Int64,
     username: String
 }
 
@@ -815,9 +817,9 @@ func (ec *executionContext) _Repository_rest_api_id(ctx context.Context, field g
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*int)
+	res := resTmp.(*int64)
 	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Repository_name(ctx context.Context, field graphql.CollectedField, obj *model.Repository) (ret graphql.Marshaler) {
@@ -980,9 +982,9 @@ func (ec *executionContext) _User_rest_api_id(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*int)
+	res := resTmp.(*int64)
 	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3057,6 +3059,29 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOInt642int64(ctx context.Context, v interface{}) (int64, error) {
+	return model.UnmarshalInt64(v)
+}
+
+func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	return model.MarshalInt64(v)
+}
+
+func (ec *executionContext) unmarshalOInt642ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt642int64(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt642int64(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalONode2codeᚗgiteaᚗioᚋgiteaᚋgraphᚋmodelᚐNode(ctx context.Context, sel ast.SelectionSet, v model.Node) graphql.Marshaler {

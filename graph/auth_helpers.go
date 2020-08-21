@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"code.gitea.io/gitea/models"
 	"errors"
 
 	giteaCtx "code.gitea.io/gitea/modules/context"
@@ -24,4 +25,9 @@ func authorizeCollaborators(ctx *giteaCtx.APIContext) error {
 	return nil
 }
 
-
+func authorizeBranches(ctx *giteaCtx.APIContext) error {
+	if !utils.IsRepoReader(ctx, models.UnitTypeCode) {
+		return errors.New("Must have read permission or be a repo or site admin")
+	}
+	return nil
+}

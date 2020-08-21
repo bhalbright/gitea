@@ -1,3 +1,5 @@
+scalar Int64
+
 interface Node {
     id: ID!
 }
@@ -11,7 +13,7 @@ type PageInfo {
 
 type Repository implements Node {
     id: ID!
-    rest_api_id: Int,
+    rest_api_id: Int64,
     name: String
     fullName: String
     collaborators(
@@ -24,7 +26,7 @@ type Repository implements Node {
 
 type User implements Node {
     id: ID!
-    rest_api_id: Int,
+    rest_api_id: Int64,
     username: String
 }
 

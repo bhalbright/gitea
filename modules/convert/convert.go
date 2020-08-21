@@ -420,11 +420,9 @@ func ToOAuth2Application(app *models.OAuth2Application) *api.OAuth2Application {
 // ToGraphRepository convert from models.Repository to graphmodel.Repository
 func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *model.Repository {
 	apiRepo := repo.APIFormat(mode)
-	//TODO need int64 type in gqlgen
-	intID := int(apiRepo.ID)
 	return &model.Repository{
 		ID:                        ToGraphId("repository", apiRepo.ID),
-		RestAPIID:                 &intID,
+		RestAPIID:                 &apiRepo.ID,
 		Name:                      &apiRepo.Name,
 		FullName:                  &apiRepo.FullName,
 	}
@@ -432,11 +430,9 @@ func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *model.R
 
 func ToGraphUser(user *models.User, signed, authed bool) *model.User {
 	apiUser := ToUser(user, signed, authed)
-	//TODO need int64 type in gqlgen
-	intID := int(apiUser.ID)
 	return &model.User{
 		ID:        ToGraphId("user", apiUser.ID),
-		RestAPIID: &intID,
+		RestAPIID: &apiUser.ID,
 		Username:  &apiUser.UserName,
 	}
 }

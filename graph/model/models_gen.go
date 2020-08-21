@@ -15,7 +15,7 @@ type PageInfo struct {
 
 type User struct {
 	ID        string  `json:"id"`
-	RestAPIID *int    `json:"rest_api_id"`
+	RestAPIID *int64  `json:"rest_api_id"`
 	Username  *string `json:"username"`
 }
 

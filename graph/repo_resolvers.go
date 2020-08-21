@@ -194,11 +194,6 @@ func BranchesResolver(p graphql.ResolveParams) (interface{}, error) {
 	return apiBranches, nil
 }
 
-func authorizeBranches(ctx *giteaCtx.APIContext) error {
-	if !utils.IsRepoReader(ctx, models.UnitTypeCode) {
-		return errors.New("Must have read permission or be a repo or site admin")
-	}
-	return nil
-}
+
 
  */
