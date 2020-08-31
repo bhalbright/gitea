@@ -418,24 +418,132 @@ func ToOAuth2Application(app *models.OAuth2Application) *api.OAuth2Application {
 }
 
 // ToGraphRepository convert from models.Repository to graphmodel.Repository
-func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *model.Repository {
+func ToGraphRepository(repo *models.Repository, mode models.AccessMode, signed, authed bool) *model.Repository {
 	apiRepo := repo.APIFormat(mode)
+	graphRepo := innerToGraphRepository(apiRepo)
+	if apiRepo.Parent != nil {
+		graphRepo.Parent = innerToGraphRepository(apiRepo.Parent)
+	}
+	graphRepo.Owner = innerToGraphUser(repo.Owner.APIFormat())
+	return graphRepo
+}
+
+func innerToGraphRepository(apiRepo *structs.Repository) *model.Repository {
 	return &model.Repository{
 		ID:                        ToGraphId("repository", apiRepo.ID),
 		RestAPIID:                 &apiRepo.ID,
 		Name:                      &apiRepo.Name,
 		FullName:                  &apiRepo.FullName,
+		Description:               &apiRepo.Description,
+		Private:                   &apiRepo.Private,
+		Template:                  &apiRepo.Template,
+		Empty:                     &apiRepo.Empty,
+		Archived:                  &apiRepo.Archived,
+		Size:                      &apiRepo.Size,
+		Fork:                      &apiRepo.Fork,
+		Mirror:                    &apiRepo.Mirror,
+		HTMLURL:                   &apiRepo.HTMLURL,
+		SSHURL:                    &apiRepo.SSHURL,
+		CloneURL:                  &apiRepo.CloneURL,
+		Website:                   &apiRepo.Website,
+		Stars:                     &apiRepo.Stars,
+		Forks:                     &apiRepo.Forks,
+		Watchers:                  &apiRepo.Watchers,
+		OpenIssues:                &apiRepo.OpenIssues,
+		OpenPulls:                 &apiRepo.OpenPulls,
+		Releases:                  &apiRepo.Releases,
+		DefaultBranch:             &apiRepo.DefaultBranch,
+		Created:                   &apiRepo.Created,
+		Updated:                   &apiRepo.Updated,
+		Permissions:               ToGraphPermissions(apiRepo.Permissions),
+		HasIssues:                 &apiRepo.HasIssues,
+		ExternalTracker:           ToGraphExternalTracker(apiRepo.ExternalTracker),
+		InternalTracker:           ToGraphInternalTracker(apiRepo.InternalTracker),
+		HasWiki:                   &apiRepo.HasWiki,
+		ExternalWiki:              ToGraphExternalWiki(apiRepo.ExternalWiki),
+		HasPullRequests:           &apiRepo.HasPullRequests,
+		IgnoreWhitespaceConflicts: &apiRepo.IgnoreWhitespaceConflicts,
+		AllowMerge:                &apiRepo.AllowMerge,
+		AllowRebase:               &apiRepo.AllowRebase,
+		AllowRebaseMerge:          &apiRepo.AllowRebaseMerge,
+		AllowSquash:               &apiRepo.AllowSquash,
+		AvatarURL:                 &apiRepo.AvatarURL,
+		Internal:                  &apiRepo.Internal,
 	}
 }
 
+// ToGraphPermissions convert an api.Permission to a graphql Permission
+func ToGraphPermissions(apiPermissions *structs.Permission) *model.Permission {
+	return &model.Permission{
+		Admin: &apiPermissions.Admin,
+		Push:  &apiPermissions.Push,
+		Pull:  &apiPermissions.Pull,
+	}
+}
+
+// ToGraphExternalTracker convert an api.ExternalTracker to a graphql ExternalTracker
+func ToGraphExternalTracker(apiExternalTracker *structs.ExternalTracker) *model.ExternalTracker {
+	return &model.ExternalTracker{
+		ExternalTrackerURL:    &apiExternalTracker.ExternalTrackerURL,
+		ExternalTrackerFormat: &apiExternalTracker.ExternalTrackerFormat,
+		ExternalTrackerStyle:  &apiExternalTracker.ExternalTrackerStyle,
+	}
+}
+
+// ToGraphInternalTracker convert an api.InternalTracker to a graphql InternalTracker
+func ToGraphInternalTracker(apiInternalWiki *structs.InternalTracker) *model.InternalTracker {
+	return &model.InternalTracker{
+		EnableTimeTracker:                &apiInternalWiki.EnableTimeTracker,
+		AllowOnlyContributorsToTrackTime: &apiInternalWiki.AllowOnlyContributorsToTrackTime,
+		EnableIssueDependencies:          &apiInternalWiki.EnableIssueDependencies,
+	}
+}
+
+// ToGraphExternalWiki convert an api.ExternalWiki to a graphql ExternalWiki
+func ToGraphExternalWiki(apiExternalWiki *structs.ExternalWiki) *model.ExternalWiki {
+	return &model.ExternalWiki{ExternalWikiURL: &apiExternalWiki.ExternalWikiURL}
+}
+
+// ToGraphUser convert a models.User to a graphql User
 func ToGraphUser(user *models.User, signed, authed bool) *model.User {
 	apiUser := ToUser(user, signed, authed)
+	return innerToGraphUser(apiUser)
+}
+
+func innerToGraphUser(apiUser *structs.User) *model.User {
 	return &model.User{
 		ID:        ToGraphId("user", apiUser.ID),
 		RestAPIID: &apiUser.ID,
 		Username:  &apiUser.UserName,
+		FullName:  &apiUser.FullName,
+		Email:     &apiUser.Email,
+		AvatarURL: &apiUser.AvatarURL,
+		Language:  &apiUser.Language,
+		IsAdmin:   &apiUser.IsAdmin,
+		LastLogin: &apiUser.LastLogin,
+		Created:   &apiUser.Created,
 	}
 }
+
+// ToGraphBranch convert a git.Commit and git.Branch to an graphql Branch
+func ToGraphBranch(repo *models.Repository, b *git.Branch, c *git.Commit, bp *models.ProtectedBranch, user *models.User, isRepoAdmin bool) (*model.Branch, error) {
+	apiBranch, err := ToBranch(repo, b, c, bp, user, isRepoAdmin)
+	if err != nil {
+		return nil, err
+	}
+	return &model.Branch{
+		Name:                          &apiBranch.Name,
+		Commit:                        &apiBranch.Commit, //PayloadCommit
+		Protected:                     &apiBranch.Protected,
+		RequiredApprovals:             &apiBranch.RequiredApprovals,
+		EnableStatusCheck:             &apiBranch.EnableStatusCheck,
+		StatusCheckContexts:           &apiBranch.StatusCheckContexts,
+		UserCanPush:                   &apiBranch.UserCanMerge,
+		UserCanMerge:                  &apiBranch.UserCanPush,
+		EffectiveBranchProtectionName: &apiBranch.EffectiveBranchProtectionName,
+	}, nil
+}
+
 
 // ToGraphId returns an encoded ID from the given typename and ID that is unique.
 func ToGraphId(typename string, ID int64) string {

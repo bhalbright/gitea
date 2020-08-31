@@ -159,6 +159,7 @@ func (r *queryResolver) resolveUserById(goCtx context.Context, id string) (*mode
 		r.giteaApiContext.User != nil && r.giteaApiContext.User.IsAdmin), nil
 }
 
+//func (r *repositoryResolver) resolveCollaborators(ctx context.Context, obj *model.Repository, first *int, after *string, last *int, before *string) (*model.UserConnection, error) {
 /*
 // BranchesResolver resolves the branches of a repository
 func BranchesResolver(p graphql.ResolveParams) (interface{}, error) {

@@ -1,4 +1,5 @@
 scalar Int64
+scalar Time
 
 interface Node {
     id: ID!
@@ -11,11 +12,111 @@ type PageInfo {
     endCursor: String
 }
 
+type Permission {
+    admin: Boolean
+    push:  Boolean
+    pull:  Boolean
+}
+
+type InternalTracker {
+    enable_time_tracker: Boolean
+    allow_only_contributors_to_track_time: Boolean
+    enable_issue_dependencies: Boolean
+}
+
+type ExternalTracker {
+    external_tracker_url: String
+    external_tracker_format: String
+    external_tracker_style: String
+}
+
+type ExternalWiki {
+    external_wiki_url: String
+}
+
+type PayloadCommit {
+    id:           String
+    message:      String
+    url:          String
+    author:       PayloadUser
+    committer:    PayloadUser
+    verification: PayloadCommitVerification
+    timestamp: Time
+    added:     [String]
+    removed:   [String]
+    modified:  [String]
+}
+
+type PayloadCommitVerification {
+    verified:  Boolean
+    reason:    String
+    signature: String
+    signer:    PayloadUser
+    payload:   String
+}
+
+type Branch {
+    name:                          String
+    commit:                        PayloadCommit
+    protected:                     Boolean
+    required_approvals:             Int64
+    enable_status_check:             Boolean
+    status_check_contexts:           [String]
+    user_can_push:                   Boolean
+    user_can_merge:                  Boolean
+    effective_branch_protection_name: String
+}
+
+type PayloadUser {
+    name: String
+    email:    String
+    username: String
+}
+
 type Repository implements Node {
     id: ID!
-    rest_api_id: Int64,
+    rest_api_id: Int64
     name: String
     fullName: String
+    owner: User
+    description:   String
+    empty:         Boolean
+    private:       Boolean
+    fork:          Boolean
+    template:      Boolean
+    parent:        Repository
+    mirror:        Boolean
+    size:          Int
+    html_url:       String
+    ssh_url:        String
+    clone_url:      String
+    original_url:   String
+    website:       String
+    stars_count:         Int
+    forks_count:         Int
+    watchers_count:      Int
+    open_issues_count:    Int
+    open_pr_counter:     Int
+    release_counter:      Int
+    default_branch: String
+    archived:      Boolean
+    created_at: Time
+    updated_at: Time
+    permissions:  Permission
+    has_issues:                 Boolean
+    internal_tracker:           InternalTracker
+    external_tracker:           ExternalTracker
+    has_wiki:                   Boolean
+    external_wiki:              ExternalWiki
+    has_pull_requests:           Boolean
+    ignore_whitespace_conflicts: Boolean
+    allow_merge_commits:                Boolean
+    allow_rebase:               Boolean
+    allow_rebase_explicit:          Boolean
+    allow_squash_merge:               Boolean
+    avatar_url:                 String
+    internal:                  Boolean
+    branches:                  [Branch]
     collaborators(
         first: Int,
         after: String,
@@ -26,13 +127,20 @@ type Repository implements Node {
 
 type User implements Node {
     id: ID!
-    rest_api_id: Int64,
+    rest_api_id: Int64
     username: String
+    full_name: String
+    email: String
+    avatar_url: String
+    language: String
+    is_admin: Boolean
+    last_login: Time
+    created: Time
 }
 
 type UserConnection {
     pageInfo: PageInfo!
-    totalCount: Int,
+    totalCount: Int
     edges: [UserEdge]
 }
 

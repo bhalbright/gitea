@@ -13,14 +13,6 @@ type PageInfo struct {
 	EndCursor       *string `json:"endCursor"`
 }
 
-type User struct {
-	ID        string  `json:"id"`
-	RestAPIID *int64  `json:"rest_api_id"`
-	Username  *string `json:"username"`
-}
-
-func (User) IsNode() {}
-
 type UserConnection struct {
 	PageInfo   *PageInfo   `json:"pageInfo"`
 	TotalCount *int        `json:"totalCount"`
