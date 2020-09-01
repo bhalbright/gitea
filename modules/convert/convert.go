@@ -418,7 +418,7 @@ func ToOAuth2Application(app *models.OAuth2Application) *api.OAuth2Application {
 }
 
 // ToGraphRepository convert from models.Repository to graphmodel.Repository
-func ToGraphRepository(repo *models.Repository, mode models.AccessMode, signed, authed bool) *model.Repository {
+func ToGraphRepository(repo *models.Repository, mode models.AccessMode) *model.Repository {
 	apiRepo := repo.APIFormat(mode)
 	graphRepo := innerToGraphRepository(apiRepo)
 	if apiRepo.Parent != nil {
