@@ -533,7 +533,7 @@ func ToGraphBranch(repo *models.Repository, b *git.Branch, c *git.Commit, bp *mo
 	}
 	return &model.Branch{
 		Name:                          &apiBranch.Name,
-		Commit:                        &apiBranch.Commit, //PayloadCommit
+		Commit:                        ToGraphPayloadCommit(apiBranch.Commit),
 		Protected:                     &apiBranch.Protected,
 		RequiredApprovals:             &apiBranch.RequiredApprovals,
 		EnableStatusCheck:             &apiBranch.EnableStatusCheck,
@@ -544,6 +544,41 @@ func ToGraphBranch(repo *models.Repository, b *git.Branch, c *git.Commit, bp *mo
 	}, nil
 }
 
+// ToGraphPayloadCommit convert a api.PayloadCommit to a graphql PayloadCommit
+func ToGraphPayloadCommit(apiPayloadCommit *structs.PayloadCommit) *model.PayloadCommit {
+	return &model.PayloadCommit{
+		ID:           &apiPayloadCommit.ID,
+		Message:      &apiPayloadCommit.Message,
+		URL:          &apiPayloadCommit.URL,
+		Author:       ToGraphPayloadUser(apiPayloadCommit.Author),
+		Committer:    ToGraphPayloadUser(apiPayloadCommit.Committer),
+		Verification: ToGraphPayloadCommitVerification(apiPayloadCommit.Verification),
+		Timestamp:    &apiPayloadCommit.Timestamp,
+		Added:        &apiPayloadCommit.Added,
+		Removed:      &apiPayloadCommit.Removed,
+		Modified:     &apiPayloadCommit.Modified,
+	}
+}
+
+// ToGraphPayloadUser convert an api.PayloadUser to a graphql PayloadUser
+func ToGraphPayloadUser(apiPayloadUser *structs.PayloadUser) *model.PayloadUser {
+	return &model.PayloadUser{
+		Name:     &apiPayloadUser.Name,
+		Email:    &apiPayloadUser.Email,
+		UserName: &apiPayloadUser.UserName,
+	}
+}
+
+// ToGraphPayloadCommitVerification convert an api.PayloadCommitVerification to a graphql PayloadCommitVerification
+func ToGraphPayloadCommitVerification(apiPayloadCommitVerification *structs.PayloadCommitVerification) *model.PayloadCommitVerification {
+	return &model.PayloadCommitVerification{
+		Verified:  &apiPayloadCommitVerification.Verified,
+		Reason:    &apiPayloadCommitVerification.Reason,
+		Signature: &apiPayloadCommitVerification.Signature,
+		Signer:    ToGraphPayloadUser(apiPayloadCommitVerification.Signer),
+		Payload:   &apiPayloadCommitVerification.Payload,
+	}
+}
 
 // ToGraphId returns an encoded ID from the given typename and ID that is unique.
 func ToGraphId(typename string, ID int64) string {
