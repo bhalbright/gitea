@@ -196,9 +196,9 @@ type Repository struct {
 	StatsIndexerStatus              *RepoIndexerStatus `xorm:"-"`
 	IsFsckEnabled                   bool               `xorm:"NOT NULL DEFAULT true"`
 	CloseIssuesViaCommitInAnyBranch bool               `xorm:"NOT NULL DEFAULT false"`
-	IsHookTaskPurgeEnabled          bool               `xorm:"NOT NULL DEFAULT true"`
-	NumberWebhookDeliveriesToKeep   int64              `xorm:"NOT NULL DEFAULT 10"`
-	Topics                          []string           `xorm:"TEXT JSON"`
+	OverridePruneHookTaskEnabled    bool
+	OverrideWebhookDeliveriesToKeep int64
+	Topics                          []string `xorm:"TEXT JSON"`
 
 	// Avatar: ID(10-20)-md5(32) - must fit into 64 symbols
 	Avatar string `xorm:"VARCHAR(64)"`

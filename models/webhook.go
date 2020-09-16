@@ -806,6 +806,7 @@ func DeleteDeliveredHookTasks(repoID int64, numberDeliveriesToKeep int64) error 
 		Where("hook_task.repo_id = ? AND hook_task.is_delivered = ?", repoID, true).
 		Cols("hook_task.delivered").
 		Join("INNER", "repository", "hook_task.repo_id = repository.id").
+		//TODO should check prior to coming here...
 		And("repository.is_hook_task_purge_enabled = ?", true).
 		OrderBy("hook_task.delivered desc").
 		Limit(1, int(numberDeliveriesToKeep)).

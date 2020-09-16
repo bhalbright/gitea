@@ -145,8 +145,8 @@ type RepoSettingForm struct {
 	// Admin settings
 	EnableHealthCheck                     bool
 	EnableCloseIssuesViaCommitInAnyBranch bool
-	IsHookTaskPurgeEnabled                bool
-	NumberWebhookDeliveriesToKeep         int64
+	OverridePruneHookTaskEnabled          bool
+	OverrideWebhookDeliveriesToKeep       int64
 }
 
 // Validate validates the fields

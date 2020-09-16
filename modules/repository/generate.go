@@ -242,8 +242,6 @@ func GenerateRepository(ctx models.DBContext, doer, owner *models.User, template
 		IsPrivate:                     opts.Private,
 		IsEmpty:                       !opts.GitContent || templateRepo.IsEmpty,
 		IsFsckEnabled:                 templateRepo.IsFsckEnabled,
-		IsHookTaskPurgeEnabled:        templateRepo.IsHookTaskPurgeEnabled,
-		NumberWebhookDeliveriesToKeep: templateRepo.NumberWebhookDeliveriesToKeep,
 		TemplateID:                    templateRepo.ID,
 	}
 

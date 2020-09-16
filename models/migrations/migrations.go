@@ -236,7 +236,7 @@ var migrations = []Migration{
 	// v150 -> v151
 	NewMigration("add primary key to repo_topic", addPrimaryKeyToRepoTopic),
 	// v151 -> v152
-	NewMigration("Add IsHookTaskPurgeEnabled and NumberWebhookDeliveriesToKeep columns to Repository table", addHookTaskPurge),
+	NewMigration("Add OverridePruneHookTaskEnabled and OverrideWebhookDeliveriesToKeep columns to Repository table", addHookTaskPurge),
 }
 
 // GetCurrentDBVersion returns the current db version
